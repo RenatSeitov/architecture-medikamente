@@ -1,0 +1,64 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+' === Персоны ===
+Person(patient, "Пациент", "Может записываться на приём, получать напоминания, просматривать свои анализы")
+Person(receptionist, "Сотрудник ресепшена", "Работает с клиентским порталом и CRM для регистрации и подтверждения")
+
+System_Boundary(medikamente, "Медикаменте — Платформа") {
+
+  ' Веб-портал клиента
+  Container(clientPortal, "Портал клиента", "React / SPA", 
+    "Позволяет пациенту записываться на приём, получать уведомления, видеть результаты анализов")
+
+  ' Веб-портал для ресепшена
+  Container(receptionPortal, "Портал ресепшена", "Vue/Angular", 
+    "Позволяет видеть записи пациентов, подтверждать приёмы, отправлять напоминания")
+
+  ' CRM
+  Container(crmSystem, "CRM", "Spring Boot + PostgreSQL", 
+    "Собирает и обрабатывает данные о пациентах. Все данные классифицированы и защищены")
+
+  ' Медицинская база данных
+  Container(medDB, "Медицинская БД", "PostgreSQL + TDE", 
+    "Хранит данные приёмов, диагнозов, результатов анализов. Используется шифрование на уровне БД")
+
+  ' Интеграция с лабораторией
+  Container(labAPI, "Интеграция с лабораторией", "REST API", 
+    "Получение результатов анализов через защищённый API с OAuth2 и Scopes")
+
+  ' Сервис авторизации
+  Container(authService, "Auth-сервис", "Keycloak / OAuth2", 
+    "Управляет доступом на основе RBAC и ABAC. Использует JWT с тегами доступа")
+
+  ' Очередь уведомлений
+  Container(notificationService, "Сервис уведомлений", "Node.js + RabbitMQ", 
+    "Отправляет email/SMS/звонки пациентам о приёмах. Не хранит ПДн, только идентификаторы")
+
+  ' Сервис аудита
+  Container(auditService, "Аудит доступа", "Elastic Stack / VictoriaMetrics", 
+    "Сохраняет все действия с конфиденциальными данными, позволяет отслеживать утечки")
+
+}
+
+' === Взаимодействия ===
+Rel(patient, clientPortal, "Записывается, получает уведомления")
+Rel(clientPortal, authService, "Аутентификация и авторизация")
+Rel(clientPortal, crmSystem, "Работа с данными (только с @PII и @TEMP по токену)", "HTTPS + JWT")
+Rel(clientPortal, labAPI, "Просмотр анализов", "HTTPS + OAuth2")
+
+Rel(receptionist, receptionPortal, "Работает с приёмами")
+Rel(receptionPortal, authService, "Авторизация по роли")
+Rel(receptionPortal, crmSystem, "Управление клиентами", "RBAC: доступ только к нужной зоне")
+Rel(receptionPortal, medDB, "Подтверждение записи и приёмов")
+Rel(receptionPortal, notificationService, "Отправка напоминаний")
+
+Rel(labAPI, medDB, "Сохраняет результаты анализов")
+Rel(crmSystem, medDB, "Обмен данными")
+Rel(crmSystem, auditService, "Передаёт события доступа")
+Rel(clientPortal, notificationService, "Получает подтверждения")
+
+
+@enduml

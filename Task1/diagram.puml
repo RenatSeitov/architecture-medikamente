@@ -1,0 +1,24 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_WITH_LEGEND()
+
+Person(patient, "Пациент", "Обращается за медицинскими услугами")
+Person(receptionist, "Сотрудник ресепшена", "Регистрирует пациентов и ведёт записи")
+
+System_Boundary(medikamente, "Медикаменте") {
+  System(fileServer, "Файловый сервер", "Хранит Excel, PDF, JPG файлы")
+  System(email, "Почтовый сервер", "Используется для получения писем и вложений")
+  System(excelJournal, "Журнал записи пациентов (Excel)", "Хранит список пациентов и записи на приём")
+  System(documents, "Скан-копии документов", "Паспорт, согласие на обработку ПДн и др.")
+}
+
+' Связи
+Rel(patient, receptionist, "Передаёт персональные и контактные данные")
+Rel(receptionist, excelJournal, "Вносит данные пациента")
+Rel(receptionist, documents, "Сканирует и сохраняет документы")
+Rel(excelJournal, fileServer, "Сохраняется как Excel файл")
+Rel(documents, fileServer, "JPG/PDF хранятся на сервере")
+Rel(email, fileServer, "Письма с вложениями")
+
+@enduml
